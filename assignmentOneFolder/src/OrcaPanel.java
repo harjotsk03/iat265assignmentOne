@@ -2,6 +2,8 @@ import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
+
 import javax.swing.JPanel;
 import javax.swing.Timer;
 
@@ -14,10 +16,19 @@ public class OrcaPanel extends JPanel implements ActionListener {
     private Timer t;
     private Dimension size;
     private int fishSpawnCounter = 0;
-    private static final int FISH_SPAWN_DELAY = 150; // Number of timer ticks (33 ms each) to reach 5 seconds (5000 ms)
+    private static final int FISH_SPAWN_DELAY = 150;
+    private ArrayList<Bubbles> bubbles;
+    private int bubblesLength = 3;
     
     public OrcaPanel(Dimension initialSize) {
         super();
+        
+        bubbles = new ArrayList<Bubbles>();
+        
+        for(int i = 0; i < bubblesLength; i++) {
+        	bubbles.add(new Bubbles(Util.randomInt(30, initialSize.width - 30), initialSize.height, Util.randomInt(2, 6), Util.randomInt(10,50)));
+        	System.out.println("new bubble");
+        }
         
         size = initialSize;
         backgroundObject = new Ocean(initialSize);
@@ -47,6 +58,10 @@ public class OrcaPanel extends JPanel implements ActionListener {
         if(fish != null) {
             fish.draw(g);
         }
+        
+        for (int i = 0; i < bubblesLength; i++) {
+            bubbles.get(i).drawBubble(g);
+        }
     }
 
     @Override
@@ -62,17 +77,26 @@ public class OrcaPanel extends JPanel implements ActionListener {
             
             if (orca.detectFish) {
                 fish = null;
-                orca.detectFish = false; // Reset the detection flag
-                fishSpawnCounter = 0; // Reset the counter when the fish is caught
+                orca.detectFish = false; 
+                fishSpawnCounter = 0; 
                 System.out.println("Fish caught, setting to null");
             }
         } else {
-            // Increment the counter if there is no fish
             fishSpawnCounter++;
-            // Check if the counter has reached the limit for 5 seconds
+            
             if (fishSpawnCounter >= FISH_SPAWN_DELAY) {
                 spawnFish(size);
-                fishSpawnCounter = 0; // Reset the counter after spawning the fish
+                fishSpawnCounter = 0;
+            }
+        }
+        
+        for (int i = 0; i < bubbles.size(); i++) {
+            Bubbles bubble = bubbles.get(i);
+            bubble.moveBubble();
+            if (!bubble.isOnScreen(size)) {
+                bubbles.remove(i);
+                bubbles.add(new Bubbles(Util.randomInt(30, size.width - 30), size.height, Util.randomInt(2, 6), Util.randomInt(10, 30)));
+                System.out.println("New bubble");
             }
         }
         
@@ -82,7 +106,7 @@ public class OrcaPanel extends JPanel implements ActionListener {
     private void spawnFish(Dimension initialSize) {
         if (fish == null) {
             fish = new Fish(
-                initialSize.width / 3, 
+            	(int) Util.random(100, initialSize.width - 100), 
                 initialSize.height / 3,
                 Math.min(initialSize.width, initialSize.height) / 15,
                 (int) Util.random(1, 10), 
